@@ -15,10 +15,16 @@ public class MappingController {
         this.mappingService = mappingService;
     }
 
-    @GetMapping("/mapping")
+    @GetMapping("/mapping/3depth")
     public String mapping(){
         mappingService.set_category_vo();
         mappingService.set_12depth_category_vo();
+        return "finish";
+    }
+
+    @GetMapping("/mapping/2depth")
+    public String mapping_2depth(){
+        mappingService.set_2depth_category_vo();
         return "finish";
     }
 

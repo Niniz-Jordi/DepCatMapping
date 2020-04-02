@@ -7,7 +7,15 @@
     <link rel="stylesheet" href="/webjars/bootstrap/4.1.0/css/bootstrap-theme.min.css">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-
+<!--
+<script src="/webjars/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript">
+    let tabToSelect = $;
+    $(document).ready(function() {
+        $('#my-tab a[href="#'+tabToSelect+'"]').tab('show')
+    });
+</script>
+-->
 <body>
     <div class="container bg-light">
         <div class="jumbotron jumbotron-fluid">
@@ -53,7 +61,7 @@
                 <h2 align="center">모집분야별 직종 분석</h2>
             </div>
 
-            <ul class="nav nav-tabs">
+            <ul class="nav nav-tabs" id="my-tabs" role="tablist">
                 <li class="nav-item nav-fill" th:each="entry: ${result.analysis_count}">
                      <a class="nav-link" th:href="@{'#'+${entry.key}}" data-toggle="tab"><label th:text="${entry.key}">bar title</label></a>
                 </li>
@@ -75,7 +83,7 @@
                     </tr>
                     </thead>
                     <tr th:each="point : ${entry.value}">
-                        <td th:text="${point.category_num}"></td>
+                        <td th:text="${point.category_name}"></td>
                         <td th:text="${point.total_count}"></td>
                         <td th:text="${point.words_count}"></td>
                         <td th:text="${point.count_percent}"></td>
@@ -83,7 +91,6 @@
                         <td th:text="${point.reg_tokens_percent}"></td>
                         <td th:text="${point.reg_token_percent}"></td>
                         <td th:text="${point.avg_per}"></td>
-
                     </tr>
                 </table>
             </div>

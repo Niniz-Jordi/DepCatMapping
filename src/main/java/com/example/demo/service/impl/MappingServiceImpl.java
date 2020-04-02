@@ -26,6 +26,8 @@ public class MappingServiceImpl implements MappingService {
     HashMap<String,Integer> allWordCount;
     KomoranModule komoran;
     AhoCorasickModule ahoCorasickModule;
+    List<Map<String,Object>> primary_category;
+    List<Map<String,Object>> secondary_category;
 
     MappingServiceImpl(KomoranModule komoran, AhoCorasickModule ahoCorasickModule){
         depth3_categoryVO = CategoryDAO.txt_to_category("3");
@@ -38,8 +40,15 @@ public class MappingServiceImpl implements MappingService {
         allWordCount = new HashMap<>();
         this.komoran = komoran;
         this.ahoCorasickModule = ahoCorasickModule;
+
         split_recruit_vo();
     }
+
+    public List<Map<String,Object>> get_primary_category(){
+        return primary_category;
+    }
+    public List<Map<String,Object>> get_secondary_category(){ return secondary_category; }
+
 
     public void split_recruit_vo(){
         int x=0,y=0;
@@ -128,6 +137,37 @@ public class MappingServiceImpl implements MappingService {
     }
 
 
+    public void set_2depth_category_vo(){
+        for(RecruitVO vo: SingleDepart){
+            for(String rec:vo.getRec_division().split(",")) {
+            if (rec.length() > 0) {
+            List<String> related_words = komoran.Tokenizer(rec);
+            HashMap<String,Integer> depth2 = new HashMap<>();
+            for(String cat : vo.getCat_key().split("\\|"))
+                if(cat.length()>4) depth2.put(cat.substring(0,cat.length()-2),0);
+            for (String cat : depth2.keySet()) {
+                CategoryVO depth2VO = depth2_categoryVO.get(cat);
+                if (depth2VO != null) {
+                HashMap<String, Integer> tmp = depth2VO.getRelated_words();
+                    for (String word : related_words) {
+                    if (!ahoCorasickModule.isHitKeyword(word)) {
+                        //부서별 Regularization을 위한 부서별 count
+                        depth2VO.setRelated_words_count(depth2VO.getRelated_words_count() + 1);
+                        word = word.toLowerCase();
+                        if (tmp.containsKey(word)) tmp.put(word, tmp.get(word) + 1);
+                        else tmp.put(word, 1);
+                        //단어별 Regularization 을 위한 단어별 count
+                        if(allWordCount.containsKey(word)) allWordCount.put(word,allWordCount.get(word)+1);
+                        else allWordCount.put(word,1);
+                    }}
+                }}
+            }}
+        }
+        //primary keyword 가중치 모듈
+        add_primary_keyword_2depth(125);
+        add_primary_keyword(625,depth2_categoryVO);
+    }
+
     public void set_12depth_category_vo(){
         List<CategoryVO> list_3depth = new ArrayList<>(depth3_categoryVO.values());
         for(CategoryVO vo:list_3depth){
@@ -148,7 +188,7 @@ public class MappingServiceImpl implements MappingService {
                 else depth1_related_words.put(map.getKey(),map.getValue());
             }
         }
-        add_primary_keyword(625,depth2_categoryVO);
+
     }
 
     //factor = primary keyword 가중치
@@ -158,6 +198,18 @@ public class MappingServiceImpl implements MappingService {
                 if(vo.getRelated_words().containsKey(primary_keyword))
                     vo.getRelated_words().put(primary_keyword,vo.getRelated_words().get(primary_keyword)+factor);
                 else vo.getRelated_words().put(primary_keyword,factor);
+            }
+        }
+    }
+
+    private void add_primary_keyword_2depth(int factor){
+        for(String key:depth3_categoryVO.keySet()){
+            CategoryVO depth3_VO = depth3_categoryVO.get(key);
+            CategoryVO depth2_VO = depth2_categoryVO.get(key.substring(0,key.length()-2));
+            for(String primary_keyword:depth3_VO.getPrimary_keywords().split(",")){
+                if(depth2_VO.getRelated_words().containsKey(primary_keyword))
+                    depth2_VO.getRelated_words().put(primary_keyword,depth2_VO.getRelated_words().get(primary_keyword) + factor);
+                else depth2_VO.getRelated_words().put(primary_keyword,factor);
             }
         }
     }
@@ -175,6 +227,7 @@ public class MappingServiceImpl implements MappingService {
         CategoryDAO.vo_to_category(list1,"Mapping_1depth");
         return list3;
     }
+
 
     public Map<String,Object> analysis_2depth_mapping(String rec_idx){
         if(TestSet.containsKey(rec_idx)){
@@ -244,6 +297,7 @@ public class MappingServiceImpl implements MappingService {
         List<Map<String,Object>> cat_list = new ArrayList<>(cat_map.values());
         cat_list.sort((t1, t2) -> Double.compare((Double) t2.get("avg_percent"), (Double) t1.get("avg_percent")));
         recruit_map.put(rec,cat_list);
+        set_primary_secondary_category(cat_list,tokens);
         return recruit_map;
     }
 
@@ -259,12 +313,11 @@ public class MappingServiceImpl implements MappingService {
         int total_count = 0;
         Map<String,Integer> count_list_separate_words = new HashMap<>();
         for (String token : tokens) {
+            count_list_separate_words.put(token,0);
             HashMap<String, Integer> related_words = categoryVO.get(cat).getRelated_words();
             if (related_words.containsKey(token)) {
                 total_count += related_words.get(token);
-                if (count_list_separate_words.containsKey(token))
-                    count_list_separate_words.put(token, count_list_separate_words.get(token) + related_words.get(token));
-                else count_list_separate_words.put(token, related_words.get(token));
+                count_list_separate_words.put(token, count_list_separate_words.get(token) + related_words.get(token));
             }
         }
         //단어별 영향력 정제
@@ -274,8 +327,9 @@ public class MappingServiceImpl implements MappingService {
             int count = count_list_separate_words.get(word);
             for(String str:categoryVO.keySet()) {
                 if(categoryVO.get(str).getRelated_words().containsKey(word)) {
-                    if(Integer.parseInt(str) % 10000 == Integer.parseInt(cat) % 10000) cat2_diff_count += categoryVO.get(str).getRelated_words().get(word);
-                    else cat2_diff_count += categoryVO.get(str).getRelated_words().get(word);
+                    if(Integer.parseInt(str) % 10000 == Integer.parseInt(cat) % 10000) {
+                        cat2_diff_count += categoryVO.get(str).getRelated_words().get(word);
+                    } else cat1_diff_count += categoryVO.get(str).getRelated_words().get(word);
                 }
             }
             Double token_regularization_score = RegulizationModule.corpus_regularization(count,cat1_diff_count,cat2_diff_count);
@@ -283,8 +337,8 @@ public class MappingServiceImpl implements MappingService {
         }
         //직종별 영향력 정제
         double reg_category_count = RegulizationModule.category_regularization(total_count,categoryVO.get(cat).getRelated_words_count(),3000);
-
-        point_map.put("category_num",categoryVO.get(cat).getCat_name()+" ("+cat+")");
+        point_map.put("cat_key",categoryVO.get(cat).getCat_key());
+        point_map.put("category_name",categoryVO.get(cat).getCat_name()+" ("+cat+")");
         point_map.put("total_count",total_count);
         point_map.put("words_count",count_list_separate_words);
         point_map.put("reg_category_count",reg_category_count);
@@ -323,6 +377,65 @@ public class MappingServiceImpl implements MappingService {
             x++;
         }
     }
+
+    private Map<String,Object> set_category_form(Map<String,Object> cat,List<String> tokens){
+        Map<String, Object> temp = new HashMap<>();
+        String cat_key = (String) cat.get("cat_key");
+
+        HashMap<String,CategoryVO> matching = new HashMap<>();
+        for (String key : depth3_categoryVO.keySet()) {
+            if (key.substring(0, key.length() - 2).equalsIgnoreCase(cat_key))
+                matching.put(key,depth3_categoryVO.get(key));
+        }
+        TreeMap<String,Map<String,Object>> cat_3depth = make_cat(tokens,matching);
+        List<Map<String,Object>> cat_list = new ArrayList<>(cat_3depth.values());
+        cat_list.sort((t1, t2) -> Double.compare((Double) t2.get("avg_percent"), (Double) t1.get("avg_percent")));
+
+        List<String> cat_3depth_sorted_key = new ArrayList<>();
+        for (Map<String,Object> map : cat_list) {
+            cat_3depth_sorted_key.add((String)map.get("category_name"));
+        }
+        temp.put("cat_name", cat.get("category_name"));
+        temp.put("count_sum",cat.get("total_count"));
+        temp.put("cat_2depth_key", cat_key);
+        temp.put("cat_3depth_key", cat_3depth_sorted_key);
+        return temp;
+    }
+
+    private void set_primary_secondary_category(List<Map<String,Object>> cat_list,List<String> tokens){
+        primary_category = new ArrayList<>();
+        secondary_category = new ArrayList<>();
+        primary_category.add(set_category_form(cat_list.get(0),tokens));
+        int i=1;
+        for(;i<cat_list.size();i++){
+            if (((double) cat_list.get(0).get("avg_percent")) * 0.5 < (double) cat_list.get(i).get("avg_percent") || (double) cat_list.get(i).get("avg_percent") > 10.0) {
+                primary_category.add(set_category_form(cat_list.get(i),tokens));
+            } else break;
+        }
+        for(String token:tokens){
+            if(token.length()>0) {
+                Map<String, Object> secondary = new HashMap<>();
+                int flag = 0;
+                HashMap<String, Integer> cnt = ((HashMap<String, Integer>) cat_list.get(0).get("words_count"));
+                if(cnt != null){
+                for (int j = i; j < cat_list.size(); j++) {
+                    HashMap<String, Integer> temp = ((HashMap<String, Integer>) cat_list.get(j).get("words_count"));
+                    if(temp != null){
+                    if (temp.get(token) != null && cnt.get(token) != null & temp.get(token) > cnt.get(token)) {
+                        flag = 1;
+                        cnt = temp;
+                        secondary = cat_list.get(j);
+                    } }
+                }
+                if (flag != 0) secondary_category.add(secondary);
+                }
+            }
+        }
+    }
+
+
+
+
 
 /*
     private HashMap<String,Object> analysis_3depth_count(RecruitVO vo){

@@ -2,4 +2,46 @@ body{
     background: url("photo2.jpg");
     background-size: cover;
     font-family: Arial,helve,sans-serif;
+}.arrow_box {
+     position: relative;
+     background: #c7d6ff;
+     border: 4px solid #e1ecf5;
+     width: auto;
+ }
+.arrow_box:after, .arrow_box:before {
+    top: 100%;
+    left: 20%;
+    border: solid transparent;
+    content: "";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
 }
+
+.arrow_box:after {
+    border-color: rgba(117, 213, 210, 0);
+    border-top-color: #c7d6ff;
+    border-width: 30px;
+    margin-left: -30px;
+}
+.arrow_box:before {
+    border-color: rgba(117, 213, 210, 0);
+    border-top-color: #e1ecf5;
+    border-width: 36px;
+    margin-left: -36px;
+}
+.left-box {
+    float: left;
+    width: 35%;
+    height:500px;
+ }
+.right-box {
+    float: right;
+    width: auto;
+    height:500px;
+}.div{
+    overflow: hidden;
+    height: auto;
+    border: 1px solid lightgray;
+ }

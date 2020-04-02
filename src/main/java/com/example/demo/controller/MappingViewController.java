@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -39,14 +40,21 @@ public class MappingViewController {
 
     @GetMapping("/custom")
     public String print_custom(Model model){
-        model.addAttribute("result",null);
+        model.addAttribute("table_result",null);
+        model.addAttribute("primary_category",null);
+        model.addAttribute("secondary_category",null);
         return "readingOne";
     }
 
     @GetMapping("/custom/result")
     public String print_result_one(Model model, @RequestParam("rec_content") String rec_content){
         Map<String,Object> mapping_result = mappingService.analysis_one(rec_content);
-        model.addAttribute("result",mapping_result);
+        List<Map<String,Object>> primary_category = mappingService.get_primary_category();
+        List<Map<String,Object>> secondary_category = mappingService.get_secondary_category();
+        model.addAttribute("table_result",mapping_result);
+        model.addAttribute("primary_category",primary_category);
+        model.addAttribute("secondary_category",secondary_category);
+
         return "readingOne";
     }
 }
