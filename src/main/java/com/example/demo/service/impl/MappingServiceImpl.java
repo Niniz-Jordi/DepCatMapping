@@ -22,6 +22,7 @@ public class MappingServiceImpl implements MappingService {
     List<RecruitVO> recruitVO;
     List<RecruitVO> SingleDepart;
     List<RecruitVO> MultiDepart;
+    List<RecruitVO> TestDepart;
     HashMap<String,RecruitVO> TestSet;
     HashMap<String,Integer> allWordCount;
     KomoranModule komoran;
@@ -35,6 +36,7 @@ public class MappingServiceImpl implements MappingService {
         depth1_categoryVO = CategoryDAO.txt_to_category("1");
         SingleDepart = new ArrayList<>();
         MultiDepart = new ArrayList<>();
+        TestDepart = new ArrayList<>();
         TestSet = new HashMap<>();
         recruitVO = RecruitDAO.textToRecruitVO();
         allWordCount = new HashMap<>();
@@ -49,9 +51,8 @@ public class MappingServiceImpl implements MappingService {
     }
     public List<Map<String,Object>> get_secondary_category(){ return secondary_category; }
 
-
     public void split_recruit_vo(){
-        int x=0,y=0;
+        int x=0,y=0,z=0;
         for(RecruitVO vo: recruitVO) {
             String[] rec_div = vo.getRec_division().split(",", 100);
             String[] category = vo.getCat_key().split("\\|", 100);
@@ -62,10 +63,14 @@ public class MappingServiceImpl implements MappingService {
             } else {
                 MultiDepart.add(vo);
                 TestSet.put(vo.getRec_idx(), vo);
+                if(rec_div.length>5) {
+                    TestDepart.add(vo);
+                    z++;
+                }
                 y++;
             }
         }
-        System.out.println(x+","+y);
+        System.out.println(x+","+y+","+z);
         //test set, 직종번호 확인용
     }
 
@@ -84,11 +89,9 @@ public class MappingServiceImpl implements MappingService {
                         if (!ahoCorasickModule.isHitKeyword(word)) {
                         //부서별 Regularization을 위한 부서별 count
                         tmpVO.setRelated_words_count(tmpVO.getRelated_words_count() + 1);
-
                         word = word.toLowerCase();
                         if (tmp.containsKey(word)) tmp.put(word, tmp.get(word) + 1);
                         else tmp.put(word, 1);
-
                         //단어별 Regularization 을 위한 단어별 count
                         if(allWordCount.containsKey(word)) allWordCount.put(word,allWordCount.get(word)+1);
                         else allWordCount.put(word,1);
@@ -408,9 +411,7 @@ public class MappingServiceImpl implements MappingService {
         primary_category.add(set_category_form(cat_list.get(0),tokens));
         int i=1;
         for(;i<cat_list.size();i++){
-            if (((double) cat_list.get(0).get("avg_percent")) * 0.5 < (double) cat_list.get(i).get("avg_percent") || (double) cat_list.get(i).get("avg_percent") > 10.0) {
-                primary_category.add(set_category_form(cat_list.get(i),tokens));
-            } else break;
+              primary_category.add(set_category_form(cat_list.get(i),tokens));
         }
         for(String token:tokens){
             if(token.length()>0) {
@@ -433,9 +434,59 @@ public class MappingServiceImpl implements MappingService {
         }
     }
 
+    public void testAccuracy(){
+        HashMap<String,String[]> single_recruit = new HashMap<>();
+        for(RecruitVO vo : TestDepart){
+            for(String rec:vo.getRec_division().split(",")) {
+                if (rec.length() > 0) {
+                    single_recruit.put(rec,vo.getCat_key().split("\\|"));
+                }
+            }
+        }
+        double sum = 0.0, x1 = 0.0, x2 = 0.0, x3 = 0.0, cannot = 0.0, not=0.0;
+        for(String key:single_recruit.keySet()){
+            sum++;
+            HashMap<String,Object> temp = analysis_one(key);
+            HashMap<String,Integer> depth2_map = new HashMap<>();
+            for(String rec:single_recruit.get(key)) {
+                if (rec.length() > 2) {
+                    depth2_map.put(rec.substring(0, rec.length() - 2), 0);
+                }
+            }
 
-
-
+            int flag = 0;
+            if((Integer)primary_category.get(0).get("count_sum") < 5){
+                cannot++;
+                flag = 1;
+            }
+            else {
+                for(String rc:depth2_map.keySet()){
+                    if (primary_category.get(0).get("cat_2depth_key").equals(rc) && flag == 0) {
+                        x1++;
+                        flag = 2;
+                    }
+                    else if (primary_category.size() > 1 && primary_category.get(1).get("cat_2depth_key").equals(rc) && flag == 0){
+                        x2++;
+                        flag = 2;
+                    }
+                    else if (primary_category.size() > 2 && primary_category.get(2).get("cat_2depth_key").equals(rc) && flag == 0) {
+                        x3++;
+                        flag = 2;
+                    }
+                }
+            }
+            if(flag == 0){
+                not++;
+                System.out.println(key);
+                System.out.println(depth2_map.keySet());
+                System.out.print(primary_category.get(0).get("cat_2depth_key") + ", ");
+                System.out.print(primary_category.get(1).get("cat_2depth_key") + ", ");
+                System.out.println(primary_category.get(2).get("cat_2depth_key"));
+                System.out.println("=============================");
+            }
+        }
+        System.out.println(sum+", "+x1+", "+x2+", "+ x3 +", "+cannot + ", " + not);
+    }
 
 /*
     private HashMap<String,Object> analysis_3depth_count(RecruitVO vo){

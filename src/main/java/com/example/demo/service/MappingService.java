@@ -19,4 +19,5 @@ public interface MappingService {
     HashMap<String,Object> analysis_one(String rec);
     List<Map<String,Object>> get_primary_category();
     List<Map<String,Object>> get_secondary_category();
+    void testAccuracy();
 }

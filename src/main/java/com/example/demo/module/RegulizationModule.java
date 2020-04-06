@@ -31,7 +31,7 @@ public class RegulizationModule {
     }
 
 
-    public static Double corpus_regularization(Integer count, Integer depth1_diff_count, Integer depth2_diff_count){
+    public static Double corpus_regularization(Integer count, Integer depth2_diff_count, Integer depth1_diff_count){
         return  ((count) / (double)((depth2_diff_count + 30)*10 + (depth1_diff_count + 10) * 50));
     }
 
@@ -56,7 +56,6 @@ public class RegulizationModule {
                 sum+=cnt.get(key);
             }
         }
-
         for(HashMap<String,Double> cnt:count){
             HashMap<String,String> tmp = new HashMap<>();
             for(String key:cnt.keySet()){

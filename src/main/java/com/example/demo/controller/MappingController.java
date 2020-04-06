@@ -16,7 +16,7 @@ public class MappingController {
     }
 
     @GetMapping("/mapping/3depth")
-    public String mapping(){
+    public String mapping_3depth(){
         mappingService.set_category_vo();
         mappingService.set_12depth_category_vo();
         return "finish";
@@ -38,4 +38,11 @@ public class MappingController {
         mappingService.set_12depth_category_vo();
         return "finish";
     }
+
+    @GetMapping("/print/accuracy")
+    public String accuracy_print(){
+        mappingService.testAccuracy();
+        return "finish";
+    }
+
 }

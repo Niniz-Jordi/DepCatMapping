@@ -53,7 +53,6 @@ public class CategoryDAO {
             temp.setRelated_words(new HashMap<String, Integer>());
             category.add(temp);
         }
-
         return category;
     }
 
