@@ -16,8 +16,7 @@ public interface MappingService {
     List<CategoryVO> category_print();
     Map<String,Object> analysis_2depth_mapping(String rec_idx);
     Map<String,Object> analysis_3depth_mapping(String rec_idx);
-    HashMap<String,Object> analysis_one(String rec);
+    HashMap<String,Object> analysis_one_recruit(String rec);
     List<Map<String,Object>> get_primary_category();
-    List<Map<String,Object>> get_secondary_category();
     void testAccuracy();
 }

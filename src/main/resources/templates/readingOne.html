@@ -20,13 +20,13 @@
         <div class="container">
             <div class="left-box">
             <div th:if="${#strings.isEmpty(primary_category)}" class="arrow_box">
-                <h5 align="center">빅데이터를 이용해서 예측해보겠습니다</h5>
-                <h5 align="center">(대충 예측하는 내용)</h5>
+                <h5 align="center">검색 키워드를 입력해주세요</h5>
+                <h5 align="center">빅데이터를 이용해서 예측하겠습니다</h5>
             </div>
             <div th:if="${!#strings.isEmpty(primary_category)}" class="arrow_box">
                 <div th:if="${primary_category[0].count_sum <= 5}">
                     <h5 align="center">매칭된 단어가 너무 적습니다</h5>
-                    <h5 align="center">(대충 예측 못한다는 내용)</h5>
+                    <h5 align="center">예측할 수 없습니다. 다른 키워드를 검색해주세요</h5>
                 </div>
                 <div th:if="${primary_category[0].count_sum > 5}">
                     <h5 align="center">예측한 결과는 다음과 같습니다.</h5>
@@ -45,21 +45,21 @@
                     <div class="col-md">
                         <div class="alert alert-secondary"><a th:text="${primary_category[0].cat_name}"></a></div>
                     </div>
-                    <div class="col-md" th:if="${#arrays.length(primary_category)>1}">
+                    <div class="col-md" th:if="${primary_category[1].count_sum > 5}">
                         <div class="alert alert-secondary"><a th:text="${primary_category[1].cat_name}"></a></div>
                     </div>
-                    <div class="col-md" th:if="${#arrays.length(primary_category)>2}">
+                    <div class="col-md" th:if="${primary_category[2].count_sum > 5}">
                         <div class="alert alert-secondary"><a th:text="${primary_category[2].cat_name}"></a></div>
                     </div>
                 </div>
                 <div class="row" th:if="${primary_category[0].count_sum > 5}">
-                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;" >
+                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;">
                         <div th:each="depth3:${primary_category[0].cat_3depth_key}"><a th:text="${depth3}"></a></div>
                     </div>
-                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;" th:if="${#arrays.length(primary_category)>1}">
+                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;" th:if="${primary_category[1].count_sum > 5}">
                         <div th:each="depth3:${primary_category[1].cat_3depth_key}"><a th:text="${depth3}"></a></div>
                     </div>
-                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;" th:if="${#arrays.length(primary_category)>2}">
+                    <div class="col-md" style="overflow:auto; height:250px; padding:10px;" th:if="${primary_category[2].count_sum > 5}">
                         <div th:each="depth3:${primary_category[2].cat_3depth_key}"><a th:text="${depth3}"></a></div>
                     </div>
                 </div>
@@ -70,23 +70,15 @@
                 <table class="table table-striped table-sm" th:width="800">
                     <thead class="thead-light">
                     <tr>
-                        <th scope="col" th:width="50">2depth_category</th>
+                        <th scope="col" th:width="50">2depth 직종</th>
                         <th scope="col" th:width="30">count</th>
-                        <th scope="col" th:width="100">word_cnt</th>
-                        <th scope="col" th:width="30">percent</th>
-                        <th scope="col" th:width="30">cat_per</th>
-                        <th scope="col" th:width="30">words_per</th>
-                        <th scope="col" th:width="100">word_per</th>
-                        <th scope="col" th:width="50">total_per</th>
+                        <th scope="col" th:width="300">단어별 확률</th>
+                        <th scope="col" th:width="100">최종 집계 확률</th>
                     </tr>
                     </thead>
                     <tr th:each="point : ${entry.value}">
                         <td th:text="${point.category_name}"></td>
                         <td th:text="${point.total_count}"></td>
-                        <td th:text="${point.words_count}"></td>
-                        <td th:text="${point.count_percent}"></td>
-                        <td th:text="${point.reg_cat_percent}"></td>
-                        <td th:text="${point.reg_tokens_percent}"></td>
                         <td th:text="${point.reg_token_percent}"></td>
                         <td th:text="${point.avg_per}"></td>
                     </tr>

@@ -41,6 +41,7 @@ dependencies {
     compile 'org.webjars:jquery:3.4.1'
     compile 'org.webjars:jquery-ui:1.12.1'
     compile 'org.webjars:webjars-locator:0.39'
+    compile "org.deeplearning4j:deeplearning4j-core:1.0.0-beta6"
 }
 
 test {

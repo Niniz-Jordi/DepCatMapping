@@ -22,13 +22,12 @@ public class MappingServiceImpl implements MappingService {
     List<RecruitVO> recruitVO;
     List<RecruitVO> SingleDepart;
     List<RecruitVO> MultiDepart;
-    List<RecruitVO> TestDepart;
     HashMap<String,RecruitVO> TestSet;
+    List<RecruitVO> TestDepart;
     HashMap<String,Integer> allWordCount;
     KomoranModule komoran;
     AhoCorasickModule ahoCorasickModule;
     List<Map<String,Object>> primary_category;
-    List<Map<String,Object>> secondary_category;
 
     MappingServiceImpl(KomoranModule komoran, AhoCorasickModule ahoCorasickModule){
         depth3_categoryVO = CategoryDAO.txt_to_category("3");
@@ -42,14 +41,12 @@ public class MappingServiceImpl implements MappingService {
         allWordCount = new HashMap<>();
         this.komoran = komoran;
         this.ahoCorasickModule = ahoCorasickModule;
-
         split_recruit_vo();
     }
 
     public List<Map<String,Object>> get_primary_category(){
         return primary_category;
     }
-    public List<Map<String,Object>> get_secondary_category(){ return secondary_category; }
 
     public void split_recruit_vo(){
         int x=0,y=0,z=0;
@@ -63,11 +60,23 @@ public class MappingServiceImpl implements MappingService {
             } else {
                 MultiDepart.add(vo);
                 TestSet.put(vo.getRec_idx(), vo);
-                if(rec_div.length>5) {
+                y++;
+                /*
+                int flag = 0;
+                for(int i=1;i<category.length;i++){
+                    if(category[i-1].length() == 0 || category[i].length() == 0){
+                        flag = 1;
+                        break;
+                    }
+                    else if(!category[i].substring(0,category[i].length()-2).equals(category[i-1].substring(0,category[i-1].length()-2)))
+                        flag = 1;
+                }
+                if(flag==0){
                     TestDepart.add(vo);
                     z++;
                 }
-                y++;
+                 */
+
             }
         }
         System.out.println(x+","+y+","+z);
@@ -101,7 +110,7 @@ public class MappingServiceImpl implements MappingService {
             }
         }
         //primary keyword 가중치 모듈
-        add_primary_keyword(125,depth3_categoryVO);
+        add_primary_keyword(100,depth3_categoryVO);
         //Thread 사용한 병렬처리 code, HashMap 의 key 중복 이슈 때문에 안씀.
         //ConcurrentHashMap 쓰면 thread lock 걸린다고 함. 나중에 써보기!
         /*
@@ -167,8 +176,8 @@ public class MappingServiceImpl implements MappingService {
             }}
         }
         //primary keyword 가중치 모듈
-        add_primary_keyword_2depth(125);
-        add_primary_keyword(625,depth2_categoryVO);
+        add_primary_keyword_3depth(125);
+        add_primary_keyword(250,depth2_categoryVO);
     }
 
     public void set_12depth_category_vo(){
@@ -191,7 +200,6 @@ public class MappingServiceImpl implements MappingService {
                 else depth1_related_words.put(map.getKey(),map.getValue());
             }
         }
-
     }
 
     //factor = primary keyword 가중치
@@ -205,7 +213,7 @@ public class MappingServiceImpl implements MappingService {
         }
     }
 
-    private void add_primary_keyword_2depth(int factor){
+    private void add_primary_keyword_3depth(int factor){
         for(String key:depth3_categoryVO.keySet()){
             CategoryVO depth3_VO = depth3_categoryVO.get(key);
             CategoryVO depth2_VO = depth2_categoryVO.get(key.substring(0,key.length()-2));
@@ -275,10 +283,8 @@ public class MappingServiceImpl implements MappingService {
             rec = rec.toLowerCase();
             List<String> tokens = komoran.Tokenizer(rec);
             HashMap<String,CategoryVO> cat_vo = new HashMap<>();
-
             if(idx == 0) for(String key:categoryVO.keySet()) cat_vo.put(key,categoryVO.get(key));
             else for(String key:cat_key) cat_vo.put(key,categoryVO.get(key));
-
             if(tokens.size()>0) {
                 Map<String,Map<String,Object>> cat_map = make_cat(tokens,cat_vo);
                 //값별로 정렬하기 위해 만든 리스트
@@ -290,17 +296,16 @@ public class MappingServiceImpl implements MappingService {
         return recruit_map;
     }
 
-
-    public HashMap<String,Object> analysis_one(String rec){
+    public HashMap<String,Object> analysis_one_recruit(String rec){
         rec = rec.toLowerCase();
         List<String> tokens = komoran.Tokenizer(rec);
         HashMap<String,Object> recruit_map = new HashMap<>();
         Map<String,Map<String,Object>> cat_map = make_cat(tokens,depth2_categoryVO);
-        //값별로 정렬하기 위해 만든 리스트
+        //최종 값으로 정렬하기 위해 만든 리스트
         List<Map<String,Object>> cat_list = new ArrayList<>(cat_map.values());
         cat_list.sort((t1, t2) -> Double.compare((Double) t2.get("avg_percent"), (Double) t1.get("avg_percent")));
         recruit_map.put(rec,cat_list);
-        set_primary_secondary_category(cat_list,tokens);
+        set_primary_category(cat_list,tokens);
         return recruit_map;
     }
 
@@ -330,23 +335,24 @@ public class MappingServiceImpl implements MappingService {
             int count = count_list_separate_words.get(word);
             for(String str:categoryVO.keySet()) {
                 if(categoryVO.get(str).getRelated_words().containsKey(word)) {
-                    if(Integer.parseInt(str) % 10000 == Integer.parseInt(cat) % 10000) {
+                    if(Integer.parseInt(str)%100 == Integer.parseInt(cat)%100)
+                        cat3_diff_count += categoryVO.get(str).getRelated_words().get(word);
+                    else if(Integer.parseInt(str) % 10000 == Integer.parseInt(cat) % 10000)
                         cat2_diff_count += categoryVO.get(str).getRelated_words().get(word);
-                    } else cat1_diff_count += categoryVO.get(str).getRelated_words().get(word);
+                    else cat1_diff_count += categoryVO.get(str).getRelated_words().get(word);
                 }
             }
-            Double token_regularization_score = RegulizationModule.corpus_regularization(count,cat1_diff_count,cat2_diff_count);
+            Double token_regularization_score = RegulizationModule.corpus_regularization(count,cat3_diff_count,cat2_diff_count,cat1_diff_count);
             reg_words_count.put(word, token_regularization_score);
         }
         //직종별 영향력 정제
-        double reg_category_count = RegulizationModule.category_regularization(total_count,categoryVO.get(cat).getRelated_words_count(),3000);
+        double reg_category_count = RegulizationModule.category_regularization(total_count,categoryVO.get(cat).getRelated_words_count(),5000);
         point_map.put("cat_key",categoryVO.get(cat).getCat_key());
         point_map.put("category_name",categoryVO.get(cat).getCat_name()+" ("+cat+")");
         point_map.put("total_count",total_count);
         point_map.put("words_count",count_list_separate_words);
         point_map.put("reg_category_count",reg_category_count);
         point_map.put("reg_words_count",reg_words_count);
-
         return point_map;
     }
 
@@ -405,32 +411,31 @@ public class MappingServiceImpl implements MappingService {
         return temp;
     }
 
-    private void set_primary_secondary_category(List<Map<String,Object>> cat_list,List<String> tokens){
+    private void set_primary_category(List<Map<String,Object>> cat_list,List<String> tokens){
         primary_category = new ArrayList<>();
-        secondary_category = new ArrayList<>();
         primary_category.add(set_category_form(cat_list.get(0),tokens));
-        int i=1;
-        for(;i<cat_list.size();i++){
-              primary_category.add(set_category_form(cat_list.get(i),tokens));
-        }
+        int flag=0;
+        Double max=0.0;
         for(String token:tokens){
             if(token.length()>0) {
-                Map<String, Object> secondary = new HashMap<>();
-                int flag = 0;
-                HashMap<String, Integer> cnt = ((HashMap<String, Integer>) cat_list.get(0).get("words_count"));
-                if(cnt != null){
-                for (int j = i; j < cat_list.size(); j++) {
-                    HashMap<String, Integer> temp = ((HashMap<String, Integer>) cat_list.get(j).get("words_count"));
-                    if(temp != null){
-                    if (temp.get(token) != null && cnt.get(token) != null & temp.get(token) > cnt.get(token)) {
-                        flag = 1;
-                        cnt = temp;
-                        secondary = cat_list.get(j);
-                    } }
+            HashMap<String, String> cnt = ((HashMap<String, String>) cat_list.get(0).get("reg_token_percent"));
+            Double cnt_per = Double.parseDouble(cnt.get(token).substring(0,cnt.get(token).length()-1));
+            for (int j = 1; j < cat_list.size(); j++) {
+                HashMap<String, String> temp = ((HashMap<String, String>) cat_list.get(j).get("reg_token_percent"));
+                Double temp_per = Double.parseDouble(temp.get(token).substring(0,temp.get(token).length()-1));
+                if(temp_per - cnt_per > max) {
+                    flag = j;
+                    max = temp_per - cnt_per;
                 }
-                if (flag != 0) secondary_category.add(secondary);
-                }
-            }
+            }}
+        }
+        if(flag == 0){
+            primary_category.add(set_category_form(cat_list.get(1),tokens));
+            primary_category.add(set_category_form(cat_list.get(2),tokens));
+        } else{
+            primary_category.add(set_category_form(cat_list.get(flag),tokens));
+            if(flag == 1) primary_category.add(set_category_form(cat_list.get(2),tokens));
+            else primary_category.add(set_category_form(cat_list.get(1),tokens));
         }
     }
 
@@ -446,7 +451,7 @@ public class MappingServiceImpl implements MappingService {
         double sum = 0.0, x1 = 0.0, x2 = 0.0, x3 = 0.0, cannot = 0.0, not=0.0;
         for(String key:single_recruit.keySet()){
             sum++;
-            HashMap<String,Object> temp = analysis_one(key);
+            analysis_one_recruit(key);
             HashMap<String,Integer> depth2_map = new HashMap<>();
             for(String rec:single_recruit.get(key)) {
                 if (rec.length() > 2) {
@@ -478,112 +483,16 @@ public class MappingServiceImpl implements MappingService {
             if(flag == 0){
                 not++;
                 System.out.println(key);
-                System.out.println(depth2_map.keySet());
-                System.out.print(primary_category.get(0).get("cat_2depth_key") + ", ");
-                System.out.print(primary_category.get(1).get("cat_2depth_key") + ", ");
-                System.out.println(primary_category.get(2).get("cat_2depth_key"));
+                for(String k:depth2_map.keySet()){
+                    if(depth2_categoryVO.containsKey(k)) System.out.print(k+"("+depth2_categoryVO.get(k).getCat_name()+")");
+                }
+                System.out.println();
+                System.out.print(primary_category.get(0).get("cat_2depth_key") +"(" + depth2_categoryVO.get(primary_category.get(0).get("cat_2depth_key")).getCat_name()+"), ");
+                System.out.print(primary_category.get(1).get("cat_2depth_key") +"(" + depth2_categoryVO.get(primary_category.get(1).get("cat_2depth_key")).getCat_name()+"), ");
+                System.out.println(primary_category.get(2).get("cat_2depth_key") +"(" + depth2_categoryVO.get(primary_category.get(2).get("cat_2depth_key")).getCat_name()+")");
                 System.out.println("=============================");
             }
         }
         System.out.println(sum+", "+x1+", "+x2+", "+ x3 +", "+cannot + ", " + not);
     }
-
-/*
-    private HashMap<String,Object> analysis_3depth_count(RecruitVO vo){
-        HashMap<String,Object> recruit_map = new HashMap<>();
-        String[] Rec_division = vo.getRec_division().split(",",100);
-        String[] cat_key = vo.getCat_key().split("\\|",100);
-        for(String rec:Rec_division){
-            rec = rec.toLowerCase();
-            List<String> tokens = komoran.Tokenizer(rec);
-            if(tokens.size()>0) {
-                Map<Integer,Map<String,Object>> cat_map = make_cat2(cat_key,tokens);
-                List<Map<String,Object>> cat_list = new ArrayList<>(cat_map.values());
-
-                cat_list.sort((t1, t2) -> Double.compare((Double) t2.get("avg_percent"), (Double) t1.get("avg_percent")));
-                recruit_map.put(rec,cat_list);
-            }
-        }
-        return recruit_map;
-    }
-
-    private TreeMap<Integer,Map<String,Object>> make_cat2(String[] cat_key, List<String> tokens){
-        TreeMap<Integer,Map<String,Object>> cat_map = new TreeMap<>();
-        ArrayList<Double> count_list = new ArrayList<>();
-        ArrayList<Double> regularization_list = new ArrayList<>();
-
-        for (String cat : cat_key) {
-            Map<String,Object> point_map = new HashMap<>();
-            int rec_point = 0;
-            Map<String,Integer> count_list_separate_words = new HashMap<>();
-            for (String token : tokens) {
-                CategoryVO tmp = depth3_categoryVO.get(cat);
-                if (tmp != null) {
-                    HashMap<String, Integer> related_words = tmp.getRelated_words();
-                    if (related_words.containsKey(token)) {
-                        rec_point += related_words.get(token);
-                        if (count_list_separate_words.containsKey(token))
-                            count_list_separate_words.put(token, count_list_separate_words.get(token) + related_words.get(token));
-                        else count_list_separate_words.put(token, related_words.get(token));
-                    }
-                }
-            }
-            double regularization_count = RegulizationModule.category_regularization(rec_point,depth3_categoryVO.get(cat).getRelated_words_count(),1000);
-
-            count_list.add((double)rec_point);
-            regularization_list.add(regularization_count);
-            point_map.put("category_num",depth3_categoryVO.get(cat).getCat_name()+" ("+cat+")");
-            point_map.put("total_count",rec_point);
-            point_map.put("regularization_count",regularization_count);
-            point_map.put("tokens_count",count_list_separate_words);
-            cat_map.put(Integer.parseInt(cat),point_map);
-        }
-        ArrayList<Double> reg_token_sum = new ArrayList<>();
-        ArrayList<HashMap<String,Double>> reg_token_counts = new ArrayList<>();
-
-
-        for(Integer key:cat_map.keySet()){
-            Map<String,Object> temp = cat_map.get(key);
-            HashMap<String, Double> reg_token_count = new HashMap<>();
-            HashMap<String,Double> token = (HashMap<String, Double>) temp.get("tokens_count");
-            for(String tok:token.keySet()) {
-                HashMap<Integer,Integer> category_token_nm = new HashMap<>();
-                for(String str:depth3_categoryVO.keySet()){
-                    Integer k = Integer.parseInt(str);
-                    category_token_nm.put(k, depth3_categoryVO.get(k.toString()).getRelated_words().getOrDefault(tok, 0));
-                }
-                for (Integer k : cat_map.keySet()) {
-                    HashMap<String, Integer> tmp = (HashMap<String, Integer>) temp.get("tokens_count");
-                    Double token_regularization_score = RegulizationModule.corpus_regularization2(k, tmp.get(tok), category_token_nm);
-                    reg_token_count.put(tok, token_regularization_score);
-                }
-            }
-            temp.put("reg_token_count",reg_token_count);
-            reg_token_counts.add(reg_token_count);
-            reg_token_sum.add(reg_token_count.values().stream().mapToDouble(Double::doubleValue).sum());
-        }
-
-
-        //percent
-        ArrayList<Double> count_list_percent= RegulizationModule.count_to_percent(count_list);
-        ArrayList<Double> regularization_list_percent= RegulizationModule.count_to_percent(regularization_list);
-        ArrayList<Double> reg_tokens_per = RegulizationModule.count_to_percent(reg_token_sum);
-        ArrayList<HashMap<String,String>> reg_token_per = RegulizationModule.count_to_percent2(reg_token_counts);
-        int x=0;
-        for(Integer key:cat_map.keySet()){
-            Map<String,Object> temp = cat_map.get(key);
-            HashMap<String,Double> tk = (HashMap<String, Double>) temp.get("tokens_regularization_count");
-            temp.put("count_percent",String.format("%.2f",count_list_percent.get(x))+"%");
-            temp.put("regularization_percent",String.format("%.2f",regularization_list_percent.get(x))+"%");
-            temp.put("reg_tokens_percent",String.format("%.2f",reg_tokens_per.get(x))+"%");
-            temp.put("reg_token_percent",reg_token_per.get(x));
-            temp.put("avg_percent", (reg_tokens_per.get(x)+regularization_list_percent.get(x))/2);
-            temp.put("avg_per", String.format("%.2f",(reg_tokens_per.get(x)+regularization_list_percent.get(x))/2)+"%");
-            x++;
-        }
-        return cat_map;
-    }
-
-
- */
 }

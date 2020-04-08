@@ -31,8 +31,8 @@ public class RegulizationModule {
     }
 
 
-    public static Double corpus_regularization(Integer count, Integer depth2_diff_count, Integer depth1_diff_count){
-        return  ((count) / (double)((depth2_diff_count + 30)*10 + (depth1_diff_count + 10) * 50));
+    public static Double corpus_regularization(Integer count, Integer depth3_diff_count, Integer depth2_diff_count, Integer depth1_diff_count){
+        return  (count) / ( (double)depth3_diff_count + (double)(depth2_diff_count + 30)*10 + (depth1_diff_count + 10)*50 );
     }
 
     /**count to percent module**/
@@ -45,7 +45,6 @@ public class RegulizationModule {
         }
         return percent;
     }
-
 
     /**count to percent module2**/
     public static ArrayList<HashMap<String,String>> count_to_percent2(List<HashMap<String,Double>> count){

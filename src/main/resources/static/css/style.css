@@ -38,7 +38,7 @@ body{
  }
 .right-box {
     float: right;
-    width: auto;
+    width: 62%;
     height:500px;
 }.div{
     overflow: hidden;
