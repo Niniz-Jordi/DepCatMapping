@@ -21,7 +21,7 @@
             <div class="left-box">
             <div th:if="${#strings.isEmpty(primary_category)}" class="arrow_box">
                 <h5 align="center">검색 키워드를 입력해주세요</h5>
-                <h5 align="center">빅데이터를 이용해서 예측하겠습니다</h5>
+                <h5 align="center">빅데이터를 이용해 예측해보겠습니다</h5>
             </div>
             <div th:if="${!#strings.isEmpty(primary_category)}" class="arrow_box">
                 <div th:if="${primary_category[0].count_sum <= 5}">

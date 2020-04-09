@@ -3,6 +3,7 @@ import com.example.demo.vo.CategoryVO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -16,13 +17,15 @@ import java.util.List;
 
 public class CategoryDAO {
     public static HashMap<String,CategoryVO> txt_to_category(String depth) {
-        Path path = Paths.get("C:\\data\\dictionary\\jikjong_"+depth+"depth.txt");
+        ClassPathResource resource = new ClassPathResource("dictionary/jikjong_"+depth+"depth_primary_keyword.txt");
         List<String> list = new ArrayList<String>();
-        try {
+        try{
+            Path path = Paths.get(resource.getURI());
             list = Files.readAllLines(path, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
+        }catch(IOException e){
+            e.printStackTrace();;
         }
+        //Path path = Paths.get("C:\\data\\dictionary\\jikjong_"+depth+"depth.txt");
         HashMap<String,CategoryVO> category = new HashMap<String,CategoryVO>();
 
         for (int i = 0; i < list.size(); i++) {
@@ -38,13 +41,14 @@ public class CategoryDAO {
     }
 
     public static List<CategoryVO> txt_to_category_list(String depth){
-        Path path = Paths.get("C:\\data\\dictionary\\jikjong_"+depth+"depth.txt");
+        ClassPathResource resource = new ClassPathResource("dictionary/jikjong_"+depth+"depth_primary_keyword.txt");
         List<CategoryVO> category = new ArrayList<CategoryVO>();
         List<String> list = new ArrayList<String>();
         try{
-            list = Files.readAllLines(path,StandardCharsets.UTF_8);
+            Path path = Paths.get(resource.getURI());
+            list = Files.readAllLines(path, StandardCharsets.UTF_8);
         }catch(IOException e){
-            e.printStackTrace();
+            e.printStackTrace();;
         }
         for (int i = 0; i < list.size(); i++) {
             CategoryVO temp = new CategoryVO();
