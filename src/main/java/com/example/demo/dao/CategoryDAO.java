@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.core.io.ClassPathResource;
-
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -18,23 +17,21 @@ import java.util.List;
 public class CategoryDAO {
     public static HashMap<String,CategoryVO> txt_to_category(String depth) {
         ClassPathResource resource = new ClassPathResource("dictionary/jikjong_"+depth+"depth_primary_keyword.txt");
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         try{
             Path path = Paths.get(resource.getURI());
             list = Files.readAllLines(path, StandardCharsets.UTF_8);
         }catch(IOException e){
-            e.printStackTrace();;
+            e.printStackTrace();
         }
-        //Path path = Paths.get("C:\\data\\dictionary\\jikjong_"+depth+"depth.txt");
-        HashMap<String,CategoryVO> category = new HashMap<String,CategoryVO>();
-
-        for (int i = 0; i < list.size(); i++) {
+        HashMap<String,CategoryVO> category = new HashMap<>();
+        for (String s : list) {
             CategoryVO temp = new CategoryVO();
-            temp.setCat_key(list.get(i).split("\\|\\*\\|")[0]);
-            temp.setCat_name(list.get(i).split("\\|\\*\\|")[1]);
-            temp.setPrimary_keywords(list.get(i).split("\\|\\*\\|",5)[3]);
-            temp.setRelated_words(new HashMap<String,Integer>());
-            category.put(list.get(i).split("\\|\\*\\|")[0],temp);
+            temp.setCat_key(s.split("\\|\\*\\|")[0]);
+            temp.setCat_name(s.split("\\|\\*\\|")[1]);
+            temp.setPrimary_keywords(s.split("\\|\\*\\|", 5)[3]);
+            temp.setRelated_words(new HashMap<>());
+            category.put(s.split("\\|\\*\\|")[0], temp);
             temp.setRelated_words_count(0);
         }
         return category;
@@ -42,24 +39,23 @@ public class CategoryDAO {
 
     public static List<CategoryVO> txt_to_category_list(String depth){
         ClassPathResource resource = new ClassPathResource("dictionary/jikjong_"+depth+"depth_primary_keyword.txt");
-        List<CategoryVO> category = new ArrayList<CategoryVO>();
-        List<String> list = new ArrayList<String>();
+        List<CategoryVO> category = new ArrayList<>();
+        List<String> list = new ArrayList<>();
         try{
             Path path = Paths.get(resource.getURI());
             list = Files.readAllLines(path, StandardCharsets.UTF_8);
         }catch(IOException e){
-            e.printStackTrace();;
+            e.printStackTrace();
         }
-        for (int i = 0; i < list.size(); i++) {
+        for (String s : list) {
             CategoryVO temp = new CategoryVO();
-            temp.setCat_key(list.get(i).split("\\|\\*\\|")[0]);
-            temp.setCat_name(list.get(i).split("\\|\\*\\|")[1]);
+            temp.setCat_key(s.split("\\|\\*\\|")[0]);
+            temp.setCat_name(s.split("\\|\\*\\|")[1]);
             temp.setRelated_words(new HashMap<String, Integer>());
             category.add(temp);
         }
         return category;
     }
-
 
     public static List<CategoryVO> category_to_vo(String name){
         Gson gson = new GsonBuilder().create();
@@ -85,7 +81,4 @@ public class CategoryDAO {
             fOut.close();
         }catch(IOException e){ e.printStackTrace(); }
     }
-
-
-
 }

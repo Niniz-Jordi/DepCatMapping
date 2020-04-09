@@ -1,6 +1,5 @@
 package com.example.demo.dao;
 
-import com.example.demo.vo.CategoryVO;
 import com.example.demo.vo.RecruitVO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,12 +17,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.github.renuevo.csv.CsvUtils;
+
 public class RecruitDAO {
     public static List<RecruitVO> textToRecruitVO(){
-        List<RecruitVO> recruitVO = new ArrayList<RecruitVO>();
+        /*안되는디? 이게 아닌가?
+        CsvUtils csvUtils = new CsvUtils();
+        try {
+            List<RecruitVO> temp = csvUtils.readModelCsv("C:\\data\\recruit_search\\1", "utf-8", RecruitVO.class);
+            for(RecruitVO vo:temp){
+                System.out.println(vo.toString());
+            }
+        }catch(IOException e){ e.printStackTrace(); }
+        */
+        List<RecruitVO> recruitVO = new ArrayList<>();
         for(int i=1;i<41;i++){
             Path path = Paths.get("C:\\data\\recruit_search\\" + i + ".txt");
-            List<String> list = new ArrayList<String>();
+            List<String> list = new ArrayList<>();
             try {
                 list = Files.readAllLines(path, StandardCharsets.UTF_8);
             } catch (IOException e) {
@@ -71,7 +81,7 @@ public class RecruitDAO {
             myOutWriter.append(json);
             myOutWriter.close();
             fOut.close();
-        }catch(IOException e){ }
+        }catch(IOException e){ e.printStackTrace(); }
     }
 
 }
