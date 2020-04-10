@@ -30,7 +30,6 @@ public class RegulizationModule {
         return (double)count / (double)(category_count_all+factor);
     }
 
-
     public static Double corpus_regularization(Integer count, Integer depth3_diff_count, Integer depth2_diff_count, Integer depth1_diff_count){
         return  (count) / ( (double)depth3_diff_count + (double)(depth2_diff_count + 30)*10 + (depth1_diff_count + 10)*50 );
     }
